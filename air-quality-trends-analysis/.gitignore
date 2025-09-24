@@ -1,0 +1,21 @@
+# Global ignores
+.DS_Store
+.env
+*.log
+
+# Python (backend)
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.sqlite3
+
+# Node (frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# n8n
+n8n/.n8n/   # local runtime config if you test n8n locally
+
+# Reports (generated artifacts)
+reports/
