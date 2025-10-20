@@ -1,6 +1,6 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from ..schemas import ForecastMultiIn
-from .security import Plan
+from .security import Plan, get_plan
 
 def enforce_scrape(plan: Plan, days: int):
     if plan == "free" and days > 7:
