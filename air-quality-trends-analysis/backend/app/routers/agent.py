@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..db import get_db
 from ..schemas import AgentPlanIn, AgentPlanOut, ToolStep, AgentExecIn, AgentExecOut
@@ -43,7 +43,7 @@ def mcp_list_tools():
     return {"tools": TOOLS}
 
 @router.post("/mcp/tools/call")
-def mcp_call_tool(call: dict, plan: Plan = Depends(get_plan), db: Session = Depends(get_db)):
+def mcp_call_tool(call: dict, request: Request, plan: Plan = Depends(get_plan), db: Session = Depends(get_db)):
     name = call.get("name")
     args = call.get("arguments", {})
 
@@ -75,7 +75,11 @@ def mcp_call_tool(call: dict, plan: Plan = Depends(get_plan), db: Session = Depe
 def agent_plan(payload: AgentPlanIn):
     plan_obj = plan_with_llama(payload.prompt, TOOLS, temperature=0.2)
     steps = [ToolStep(**step) for step in plan_obj.get("plan", [])]
-    return {"plan": steps, "notes": plan_obj.get("notes")}
+    return {
+        "plan": steps, 
+        "notes": plan_obj.get("notes"),
+        "irrelevant": plan_obj.get("irrelevant", False)
+    }
 
 def _execute_step(db: Session, plan: Plan, step: ToolStep):
     name, args = step.name, (step.arguments or {})
@@ -106,7 +110,7 @@ def _execute_step(db: Session, plan: Plan, step: ToolStep):
     return {"tool": name, "ok": False, "args": args, "error": "Unknown tool"}
 
 @router.post("/execute", response_model=AgentExecOut)
-def agent_execute(payload: AgentExecIn, plan: Plan = Depends(get_plan), db: Session = Depends(get_db)):
+def agent_execute(payload: AgentExecIn, request: Request, plan: Plan = Depends(get_plan), db: Session = Depends(get_db)):
     trace = []
     steps: list[ToolStep] = []
     last_ok = None
