@@ -1,23 +1,115 @@
-# AirSense — Agentic Air Quality Trend Analysis  
-_Scraper • Pattern Analyzer • Forecaster • PDF Reporter (FastAPI + React + MySQL + MCP + Ollama Llama 3.2)_
+# AirSense — Intelligent Air Quality Analytics Platform
+![AirSense Logo](https://img.shields.io/badge/AirSense-Intelligent%20Air%20Quality%20Analytics-blue?style=for-the-badge&logo=cloud)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8+-4479A1?logo=mysql&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> An end-to-end, agentic web app that scrapes hourly air-quality (PM2.5/PM10) from Open-Meteo, caches to MySQL, compares cities with KPIs, forecasts with confidence intervals, and exports branded PDF reports with LLM commentary.
+A comprehensive **full‑stack, agentic** web application for real‑time air quality monitoring, city comparison, forecasting, and branded PDF reporting. Built with **FastAPI**, **React (Vite)**, **MySQL**, and **time‑series ML** (SARIMAX / Prophet), plus an **LLM planner** (Ollama Llama 3.2) for natural‑language workflows.
+
+---
+
+## 🔗 Table of Contents
+- [Highlights](#-highlights)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [System Diagram](#-system-diagram)
+- [Repository Structure](#-repository-structure)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [Data Sources](#-data-sources)
+- [Machine Learning](#-machine-learning)
+- [API Reference](#-api-reference)
+- [Agentic Flow](#-agentic-flow)
+- [Plans \u0026 Security](#-plans--security)
+- [Frontend](#-frontend)
+- [Deployment](#-deployment)
+- [Troubleshooting](#-troubleshooting)
+- [Roadmap](#-roadmap)
+- [License \u0026 Credits](#-license--credits)
 
 ---
 
 ## ✨ Highlights
+- **Agentic UX (MCP‑style)**: Natural prompts → LLM **plan** → FastAPI **executes tools** (`scrape_city`, `compare_cities`, `forecast_city`, `report`).
+- **Analytics**: Multi‑city KPIs (mean/min/max, best/worst), **forecasting with confidence intervals**, and **zero‑clamped** lower bounds for realism.
+- **Reporting**: One‑click **PDF reports** (ReportLab) with brand header, KPIs, embedded charts, and **LLM conclusions**.
+- **Tiering**: **Free / Pro / Enterprise** usage enforced by headers (`X-Plan`) and API key (`X-API-KEY`).
+- **Modern stack**: FastAPI + SQLAlchemy, React + Recharts + Tailwind, **Ollama Llama 3.2** planner, **MySQL 8** persistence.
 
-- **Agentic UX (MCP-style)**: Natural prompts → LLM (Llama 3.2 via **Ollama**) produces a tool plan → FastAPI executes steps (`scrape_city`, `compare_cities`, `forecast_city`, `forecast_multi`).
-- **Analytics**: Compare cities (mean/min/max, best/worst), forecast with **SARIMAX** + **confidence intervals**, clamp negatives to 0 µg/m³.
-- **Full stack**: **FastAPI** backend, **React + Recharts + Tailwind** frontend, **MySQL** persistence (XAMPP-friendly).
-- **Reporting**: Beautiful **PDF** reports (ReportLab) with branded header, KPIs table, embedded charts, and LLM conclusion.
-- **Tiering**: Free / Pro / Enterprise enforced by headers (`X-Plan`) and API key (`X-API-KEY`).
-- **Ops**: Logging with request IDs, CORS, `/healthz` checks for DB and Open-Meteo.
+---
+
+## 🌟 Features
+
+### Core
+- **Real‑time Data Collection**: Scrape hourly PM2.5/PM10 from **Open‑Meteo** (primary), with optional fusion of **OpenAQ**, **IQAir**, **WAQI**.
+- **City Comparison Analysis**: Compare cities with interactive visualizations and KPIs.
+- **AI‑Powered Forecasting**: SARIMAX (fast) and Prophet (rich) for **trend/seasonality** with **confidence intervals**.
+- **Agentic AI Assistant**: Natural language → **plan** → **execute**; auto‑renders Compare/Forecast panels.
+- **Report Generation**: Automated **PDFs** with charts, insights, recommendations.
+
+### Technical
+- **Multi‑source Integration** (4+ APIs)
+- **Interactive Visuals**: Recharts, CI bands/dashed bounds
+- **Authentication**: JWT (HTTP‑only cookies), RBAC, rate limits
+- **Responsive UI**: Tailwind + glassmorphism + subtle particle effects
+- **Observability**: Request IDs, structured logging, `/healthz`
+
+---
+
+## 🏗️ Architecture
+**React (UI)** → **FastAPI** (CORS, auth, logging, tiering) → **LLM Planner** (Ollama Llama 3.2) → **Tool Executor** → `scraper` / `comparer` / `forecaster` / `reporter` → **MySQL** (measurements + model cache) → **charts + PDF** back to UI.
+
+**External services**: Open‑Meteo (no key), optional OpenAQ/IQAir/WAQI, Ollama (local LLM).
+
+### Backend (FastAPI + Python)
+```
+backend/
+├── app/
+│   ├── core/           # Config, security, CORS, logging
+│   ├── routers/        # API endpoints
+│   ├── services/       # Scraper, forecast, reporter, llama client
+│   ├── models.py       # SQLAlchemy ORM models (users, measurements, tokens)
+│   └── schemas.py      # Pydantic request/response models
+├── models/             # Trained ML models / caches
+└── requirements.txt    # Python dependencies
+```
+
+### Frontend (React + Vite)
+```
+frontend/
+├── src/
+│   ├── components/     # Reusable UI pieces
+│   ├── pages/          # Tabs: Scrape, Compare, Forecast, Assistant, Reports
+│   ├── hooks/          # Custom hooks
+│   ├── utils/          # Formatters, http client
+│   └── contexts/       # Global state
+├── public/             # Static assets
+└── package.json
+```
+
+---
+
+## 🖼️ System Diagram
+Mermaid (also available in `docs/architecture.html`):
+
+```mermaid
+flowchart LR
+  UI[React UI] -->|fetch| API(FastAPI)
+  API -->|plan| LLM[Ollama Llama 3.2]
+  API -->|exec tools| S1[Scraper]
+  API -->|exec tools| S2[Comparer]
+  API -->|exec tools| S3[Forecaster]
+  API -->|exec tools| S4[Reporter]
+  S1 & S2 & S3 --> DB[(MySQL 8)]
+  DB --> API
+  API -->|JSON \u0026 charts| UI
+  API -->|PDF| UI
+```
 
 ---
 
 ## 📁 Repository Structure
-
 ```
 air-quality-trends-analysis/
 ├─ backend/
@@ -25,17 +117,16 @@ air-quality-trends-analysis/
 │  │  ├─ main.py               # FastAPI app (routes, MCP bridge, tier gating, agent executor)
 │  │  ├─ db.py                 # SQLAlchemy Session + MySQL engine
 │  │  ├─ services/
-│  │  │  ├─ scraper.py         # Open-Meteo fetch + upsert to MySQL
-│  │  │  ├─ forecast.py        # SARIMAX training/forecast/backtest
+│  │  │  ├─ scraper.py         # Open-Meteo fetch + upsert
+│  │  │  ├─ forecast.py        # SARIMAX/Prophet + backtest
 │  │  │  ├─ geocode.py         # (optional) city → lat/lon
-│  │  │  └─ llama_client.py    # plan_with_llama (Ollama Llama 3.2)
-│  │  └─ models/               # (optional) ORM models or file cache for SARIMAX
+│  │  │  └─ llama_client.py    # plan_with_llama (Ollama)
+│  │  └─ models/               # (optional) model cache
 │  ├─ requirements.txt
 │  └─ .env.example
 ├─ frontend/
 │  ├─ index.html
-│  ├─ src/
-│  │  └─ App.jsx               # Tabs: Data Scraping, City Analysis, Forecast, AI Assistant, Reports
+│  ├─ src/App.jsx              # Tabs: Scrape, Compare, Forecast, Assistant, Reports
 │  ├─ package.json
 │  └─ tailwind.config.js
 ├─ docs/
@@ -48,43 +139,14 @@ air-quality-trends-analysis/
 
 ---
 
-## 🧠 System Architecture (bird’s-eye)
+## 🚀 Quick Start
 
-**React (UI)** → **FastAPI** (CORS, logging, tier/auth) → **LLM Planner** (Ollama Llama 3.2) → **Tool Executor** → `scraper`/`comparer`/`forecaster` services → **MySQL** (measurements) + model cache → results & trace → **charts + PDF** → user.
+### Prerequisites
+- **Python** 3.10+ (3.8+ works), **Node.js** 16+ (18+ recommended)
+- **MySQL 8** (XAMPP friendly)
+- **Ollama** with `llama3.2` model (for agentic planner)
 
-- External services: **Open-Meteo** (hourly PM2.5/PM10), **Ollama** (local LLM).
-- Confidence intervals (CI) are visualized as dashed lines or shaded bands; lower bound is clamped to **0 µg/m³**.
-
-> See `/docs/architecture.html` for a mermaid diagram.
-
----
-
-## 🧩 Features
-
-- **Scrape**: Last N days (7–90) per city, hourly PM2.5/PM10 → persisted in MySQL.
-- **Compare**: Multi-city KPIs over a window:  
-  `n_points`, `mean_pm25`, `min_pm25`, `max_pm25`, **best** (lowest mean), **worst** (highest mean).
-- **Forecast**: SARIMAX per city, next H days with CI (`yhat_lower`/`yhat_upper`); multi-city ranking by mean predicted PM2.5.
-- **Agentic**: Natural prompt → plan → execute → auto-renders Compare/Forecast panels.
-- **Reports**: PDF with branding, KPIs, embedded charts, PM2.5 explainer, LLM conclusion.
-- **Tiering**: 
-  - **Free**: 1 city, scrape ≤ 7 days, **no forecasting**  
-  - **Pro**: ≤ 3 cities, scrape ≤ 30 days, forecast horizon ≤ 7 days  
-  - **Enterprise**: Unlimited cities, scrape ≤ 90 days, forecast horizon ≤ 30 days
-
----
-
-## 🔧 Requirements
-
-- Python 3.10+ (recommended), Node 18+, MySQL 8 (XAMPP works), **Ollama** with **llama3.2** pulled.
-- Open-Meteo (no key required).
-- OS: Windows/macOS/Linux.
-
----
-
-## ⚙️ Backend Setup (FastAPI + MySQL)
-
-1) **Create & activate venv**
+### Backend Setup
 ```bash
 cd backend
 python -m venv .venv
@@ -92,16 +154,29 @@ python -m venv .venv
 . .venv/Scripts/activate
 # macOS/Linux
 source .venv/bin/activate
-```
 
-2) **Install**
-```bash
 pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-3) **MySQL**
-- Start MySQL (XAMPP or local service).
-- Create DB & table:
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Access
+- **Frontend:** http://localhost:5173  
+- **Backend API:** http://localhost:8000  
+- **API Docs:** http://localhost:8000/docs
+
+---
+
+## ⚙️ Configuration
+
+### Database (MySQL)
+Create DB and table:
 ```sql
 CREATE DATABASE airsense CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE airsense;
@@ -119,202 +194,216 @@ CREATE TABLE measurements (
 );
 ```
 
-4) **Environment** (`backend/app/.env` or OS env)
+### Environment Variables
+Create `backend/app/.env` (or OS env):
 ```
+# Core DB
 DATABASE_URL=mysql+pymysql://root:password@127.0.0.1:3306/airsense
+
+# Auth / JWT
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_MIN=60
+COOKIE_DOMAIN=localhost
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# Plans / API
 API_KEY=dev-key-123
-ALLOWED_ORIGINS=http://localhost:5173
-DEFAULT_PLAN=enterprise
+DEFAULT_PLAN=free
+
+# Agent / LLM
 OLLAMA_BASE=http://127.0.0.1:11434
 LLAMA_MODEL=llama3.2
 ```
 
-5) **Run backend**
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-
-6) **Ollama (LLM)**
-```bash
-# install Ollama from https://ollama.ai
-ollama pull llama3.2
-ollama run llama3.2
-```
+> **Tip:** Set `DEFAULT_PLAN=enterprise` locally to test unrestricted flows.
 
 ---
 
-## 🌐 API (Quick Reference)
+## 📊 Data Sources
+- **Open‑Meteo**: Primary hourly PM2.5/PM10 (no API key).
+- **OpenAQ**: Global community/official stations.
+- **IQAir**: Real‑time air quality (licensed).
+- **WAQI**: World Air Quality Index.
 
-Headers (required from frontend/clients):
+The scraper is implemented against **Open‑Meteo** by default, with optional adapters for the others.
+
+---
+
+## 🤖 Machine Learning
+
+### SARIMAX (default)
+- **Goal**: Fast, lightweight per‑city forecasting
+- **Strengths**: Seasonal patterns, trend handling
+- **Best for**: Real‑time predictions with minimal compute
+
+### Prophet (optional)
+- **Goal**: Richer seasonality/holiday modeling
+- **Strengths**: Trend change points, holiday effects
+- **Best for**: Complex seasonal behavior
+
+**Forecast Output**
+```
+[ { ts, yhat, yhat_lower, yhat_upper } ]
+```
+- Lower bound **clamped to 0 µg/m³** for physical realism.
+- UI renders CI as shaded bands or dashed bounds; Y‑axis domain `[0, 'auto']`.
+
+**KPIs (Compare)**
+- `n_points`, `mean_pm25`, `min_pm25`, `max_pm25`, **best**/**worst** by mean.
+
+---
+
+## 📚 API Reference
+
+### Headers
 - `X-API-KEY: dev-key-123`
 - `X-Plan: free | pro | enterprise`
 
-Key endpoints:
-- `POST /scrape` `{ "city": "Colombo", "days": 7 }`
-- `POST /compare` `{ "cities": ["Colombo","Kandy"], "days": 7 }`
-- `POST /forecast` `{ "city": "Kandy", "horizonDays": 7, "trainDays": 30 }`
-- `POST /forecast/multi` `{ "cities": ["Colombo","Kandy"], "horizonDays": 7, "trainDays": 30 }`
-- `POST /agent/plan` `{ "prompt": "Compare Colombo and Kandy for last 7 days then forecast both next 7 days" }`
-- `POST /agent/execute` `{ "plan": [...] }` **or** `{ "prompt": "..." }`
-- `POST /report` `{ report_type, payload, llm_notes, chart_images? }`
-- `GET /healthz`
+### Core Endpoints
+- `POST /scrape` — `{ "city": "Colombo", "days": 7 }`
+- `POST /compare` — `{ "cities": ["Colombo","Kandy"], "days": 7 }`
+- `POST /forecast` — `{ "city": "Kandy", "horizonDays": 7, "trainDays": 30 }`
+- `POST /forecast/multi` — `{ "cities": ["Colombo","Kandy"], "horizonDays": 7, "trainDays": 30 }`
+- `POST /agent/plan` — `{ "prompt": "Compare Colombo and Kandy last 7 days then forecast both next 7 days" }`
+- `POST /agent/execute` — `{ "plan": [...] }` **or** `{ "prompt": "..." }`
+- `POST /report` — `{ report_type, payload, llm_notes, chart_images? }`
+- `GET /healthz` — DB + Open‑Meteo check
 
-Example curl:
+### Authentication
+- `POST /auth/signup` — user registration
+- `POST /auth/signin` — login
+- `POST /auth/refresh` — refresh JWT
+
+**Curl Example**
 ```bash
-curl -X POST http://localhost:8000/compare   -H "Content-Type: application/json" -H "X-API-KEY: dev-key-123" -H "X-Plan: enterprise"   -d '{"cities":["Colombo","Kandy"],"days":7}'
+curl -X POST http://localhost:8000/compare \
+  -H "Content-Type: application/json" \
+  -H "X-API-KEY: dev-key-123" \
+  -H "X-Plan: enterprise" \
+  -d '{"cities":["Colombo","Kandy"],"days":7}'
 ```
 
 ---
 
-## 🖥️ Frontend Setup (React + Vite + Tailwind)
-
-```bash
-cd frontend
-npm install
-npm run dev
-# open http://localhost:5173
-```
-
-- **App.jsx** implements tabs for Data Scraping, City Analysis, Forecast, AI Assistant, Reports.
-- Uses **fetch** to call backend; always send `X-API-KEY` and `X-Plan` headers.
-- Charts: **Recharts** multi-line with **µg/m³** formatting; CI shown as dashed lines or shaded bands.
-- CI visualization clamps negative lower bound to **0** and sets Y-axis `domain={[0,'auto']}`.
-
----
-
-## 🤖 Agentic Flow (MCP-style)
-
-1. **Plan**: `/agent/plan` calls Llama 3.2 to produce a JSON plan with steps like:
+## 🧠 Agentic Flow
+1. **Plan** (`/agent/plan`): LLM (Llama 3.2 via Ollama) produces a JSON plan, e.g.:
    ```json
-   { "plan": [
-     { "name": "scrape_city", "arguments": { "city": "Colombo", "days": 7 } },
-     { "name": "compare_cities", "arguments": { "cities": ["Colombo","Kandy"], "days": 7 } },
-     { "name": "forecast_multi", "arguments": { "cities": ["Colombo","Kandy"], "horizonDays": 7, "trainDays": 30 } }
+   {"plan":[
+     {"name":"scrape_city","arguments":{"city":"Colombo","days":7}},
+     {"name":"compare_cities","arguments":{"cities":["Colombo","Kandy"],"days":7}},
+     {"name":"forecast_multi","arguments":{"cities":["Colombo","Kandy"],"horizonDays":7,"trainDays":30}}
    ]}
    ```
-2. **Execute**: `/agent/execute` walks the steps, enforcing tier limits, returning a **trace** and a `final` result (the last successful step).
-3. **UI sync**: On Execute, the frontend updates Compare and Forecast state, pre-fills inputs, and renders charts.
+2. **Execute** (`/agent/execute`): The backend walks the steps, **enforcing plan limits**, returns a **trace** and `final` result.
+3. **UI Sync**: The frontend updates Compare/Forecast state, pre‑fills inputs, renders charts, and enables **PDF export** with LLM notes.
 
 ---
 
-## 📊 KPIs (Compare)
+## 🔐 Plans & Security
 
-For each city and window:
-- `n_points` (count of hourly samples),
-- `mean_pm25`, `min_pm25`, `max_pm25` (µg/m³),
-- `best` / `worst` (lowest/highest mean).
+### User Plans
+- **Free**: 1 city, ≤ 7 days lookback, **no forecasting**
+- **Pro**: ≤ 3 cities, ≤ 30 days lookback, **forecast horizon ≤ 7 days**
+- **Enterprise**: Unlimited cities, ≤ 90 days lookback, **forecast horizon ≤ 30 days**
+
+### Enforcement
+- `enforce_scrape(days)` → Free ≤ 7, Pro ≤ 30, Ent ≤ 90
+- `enforce_compare(cities, days)` → Free: 1 city; Pro: ≤ 3
+- `enforce_forecast(horizon, cities_len)` → Free: blocked; Pro: horizon ≤ 7, cities ≤ 3
+
+### Security Features
+- JWT auth with **HTTP‑only cookies**
+- Role‑based access control
+- API rate limiting
+- CORS allowlist
+- Structured logging with request IDs
 
 ---
 
-## 📈 Forecasting
+## 🖥️ Frontend
+- **React + Vite + Tailwind** UI with tabs: **Scrape**, **Compare**, **Forecast**, **AI Assistant**, **Reports**.
+- Always send `X-API-KEY` and `X-Plan` in requests.
+- Charts via **Recharts**; units **µg/m³**; CI visualization; zero‑clamped lower bounds.
 
-- **Model**: SARIMAX per city (fit on training window).
-- **Output**: `series: [ { ts, yhat, yhat_lower, yhat_upper } ]`.
-- **Clamping**: `yhat_lower` is clamped to **0 µg/m³** for physical realism.
-- **Visualization**: multi-city lines + optional CI bands/dashed bounds.
-
----
-
-## 🧾 PDF Reports
-
-Endpoint: `POST /report`  
-Body:  
-```json
-{
-  "report_type": "comparison" | "forecast",
-  "payload": { ...backend_result },
-  "llm_notes": "AI summary text",
-  "chart_images": ["<base64-encoded-svg-or-png>", "..."]  // optional
-}
-```
-
-- Backend builds a PDF (ReportLab) with:
-  - Brand: **AirSense**
-  - Type: Comparison/Forecast
-  - City list
-  - KPIs table (means, range, points)
-  - Charts (combined and/or per-city; forecast may include CI visuals)
-  - Metadata (window, horizon, training)
-  - PM2.5 explainer
-  - **LLM Conclusion** (from `llm_notes`)
-
-**Frontend tip:** to include charts,
+**Include charts in PDF**
 ```js
 const svg = document.querySelector('#forecast-chart svg');
 const b64 = btoa(new XMLSerializer().serializeToString(svg));
-await fetch('/report', { body: JSON.stringify({ report_type:'forecast', payload: fcRes, llm_notes: agentOut?.answer, chart_images:[b64] }) })
+await fetch('/report', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'X-API-KEY': 'dev-key-123', 'X-Plan': 'enterprise' },
+  body: JSON.stringify({ report_type: 'forecast', payload: fcRes, llm_notes: agentOut?.answer, chart_images: [b64] })
+});
 ```
 
 ---
 
-## 🔐 Tier Enforcement (maps to business model)
+## 🚀 Deployment
 
-- **Headers** drive rules: `X-Plan: free|pro|enterprise`.
-- `enforce_scrape(plan, days)` → Free ≤ 7d, Pro ≤ 30d, Ent ≤ 90d
-- `enforce_compare(plan, cities, days)` → Free: 1 city; Pro: ≤ 3 cities
-- `enforce_forecast(plan, horizon, cities_len)` → Free: blocked; Pro: horizon ≤ 7, cities ≤ 3; Ent: no limits
+### Backend
+1. Set **MySQL** and create schema.
+2. Configure **environment variables**.
+3. Install Python deps: `pip install -r requirements.txt`.
+4. Run migrations (or execute the provided `CREATE TABLE`).
+5. Start FastAPI: `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
 
----
-
-## 🧪 Testing
-
-- **Postman / Thunder Client**: import requests, set headers (`X-API-KEY`, `X-Plan`).
-- **Health**: `GET /healthz` checks DB and Open-Meteo.
-- **Sanity**: scrape → compare → forecast for 2–3 cities; verify chart and CI; download PDF.
-
----
-
-## 🛡️ Responsible AI
-
-- **Transparency**: Confidence intervals displayed and explained.
-- **Fairness**: Tiering prevents resource abuse by free users.
-- **Ethics**: Open, non-personal data; negative PM values clamped to 0.
-- **Explainability**: LLM narrates findings in natural language; plan/trace visible.
+### Frontend
+1. Build: `npm run build`
+2. Serve: any static server (Nginx, Vercel, Netlify)
+3. Configure API base URL (e.g., `VITE_API_URL` if used).
 
 ---
 
-## 🚧 Known Limitations / Future Roadmap
+## 🆘 Troubleshooting
 
-- Model choice (SARIMAX) can be replaced by Prophet/LightGBM/Neural models.
-- Geocoding fallback (Nominatim) can be added for city → lat/lon.
-- Advanced KPIs: WHO threshold exceedance %, AQI buckets, diurnal patterns.
-- Auth (JWT + users table) to gate `X-Plan` per account.
-- Cloud deploy: Docker + Render/Fly/DigitalOcean; managed MySQL.
-- CI/CD with GitHub Actions; unit tests for tools & forecasting.
+**Database Connection**
+- Verify MySQL service is running.
+- Check `DATABASE_URL` in `.env`.
+- Confirm DB `airsense` exists and user has privileges.
 
----
+**Auth / CORS**
+- Ensure `JWT_SECRET` is set.
+- `COOKIE_DOMAIN` must match environment.
+- Include frontend origins in `ALLOWED_ORIGINS`.
 
-## 🖼️ Screenshots (placeholders)
+**Frontend**
+- If using a custom env var, set `VITE_API_URL` to backend origin.
+- Confirm backend port (default **8000**).
+- Check network devtools for CORS or 401 errors.
 
-Add images to `/docs/screenshots/` and reference here:
-- City Compare (KPIs + chart)
-- Multi-City Forecast (lines + CI)
-- AI Assistant (plan + trace)
-- PDF Report sample
-
----
-
-## 📄 License
-
-MIT (or your preferred license). See `LICENSE`.
+**Agent / Ollama**
+- Install **Ollama**, `ollama pull llama3.2`.
+- Ensure `OLLAMA_BASE` is reachable.
 
 ---
 
-## 🙌 Credits
-
-- **Open-Meteo** Air Quality API  
-- **Ollama** (Llama 3.2 local LLM)  
-- **FastAPI**, **SQLAlchemy**, **ReportLab**, **Recharts**, **Tailwind**  
+## 🗺️ Roadmap
+- [ ] Real‑time notifications
+- [ ] Mobile app
+- [ ] Advanced ML models (LightGBM/Neural)
+- [ ] Historical deep‑dives (AQI buckets, diurnal patterns, WHO exceedance %)
+- [ ] IoT sensor ingestion
+- [ ] Auth‑backed tenant plans (link users ↔ `X-Plan`)
+- [ ] CI/CD and unit tests
 
 ---
 
-### Quick Start (TL;DR)
+## 🧾 License & Credits
+**License**: MIT — see `LICENSE`.
 
+**Credits**
+- **Open‑Meteo** Air Quality API
+- **OpenAQ**, **IQAir**, **WAQI** (optional integrations)
+- **Ollama** (Llama 3.2 local LLM)
+- **FastAPI**, **SQLAlchemy**, **ReportLab**, **Recharts**, **Tailwind**
+
+---
+
+### TL;DR
 ```bash
 # Backend
 cd backend && python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-# configure .env (DB, API_KEY)
 uvicorn app.main:app --reload --port 8000
 
 # LLM
@@ -323,8 +412,20 @@ ollama run llama3.2
 
 # Frontend
 cd ../frontend && npm i && npm run dev
+# open http://localhost:5173
+
+# Agent prompt
+"Compare Colombo and Kandy last 7 days, then forecast both next 7 days."
 ```
 
-Open: `http://localhost:5173` → use AI Assistant:
-> “Compare Colombo and Kandy last 7 days, then forecast both next 7 days.”  
-Click **Plan** → **Execute** → view charts → **Download PDF**.
+## 👥 Contributors & Maintainers
+
+> Add your team here. Keep this table updated in PRs. Use any avatar URL (GitHub works).
+
+| Avatar | Name | Component | Focus Areas | GitHub |
+|---|---|---|---|---|
+| <img src="https://github.com/dyneth02.png?size=84" width="42" /> | **Dyneth Hirusha** | Forecaster | SARIMAX/Prophet, backtesting, CI bands | [dyneth02](https://github.com/dyneth02) |
+| <img src="https://github.com/angeli-sliit.png?size=84" width="42" /> | **Angeli Wickrama Arachchige** | Scraper | Open‑Meteo integration, upsert to MySQL, data caching | [angeli-sliit](https://github.com/angeli-sliit) |
+| <img src="https://github.com/code-sleek.png?size=84" width="42" /> | **Yashodha Cooray** | MCP Client | Agent planner (Ollama), plan→execute bridge, UI wiring | [code-sleek](https://github.com/code-sleek) |
+| <img src="https://github.com/OshadhiLg.png?size=84" width="42" /> | **Oshadhi Liyanage** | Analyzer | KPIs/Compare module, data QA, PDF insights | [OshadhiLg](https://github.com/OshadhiLg) |
+
